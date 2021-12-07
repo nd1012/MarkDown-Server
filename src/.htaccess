@@ -1,0 +1,8 @@
+DirectoryIndex index.md
+RewriteEngine on
+RewriteBase /mdwebroot/
+RewriteRule \/md(server|header|footer)(\.hook)?\.(html|php)$ - [NC,F]
+RewriteCond %{REQUEST_FILENAME} \.md$ [NC]
+RewriteCond %{LA-U:REQUEST_FILENAME} -f
+RewriteCond %{LA-U:REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /path/to/mdwebroot/mdserver.php/$1/ [NC,L]
