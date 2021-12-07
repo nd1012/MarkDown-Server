@@ -19,7 +19,7 @@ define('MAX_CACHE_TIME',60*60*24*30);// Maximum cache time in seconds (zero to d
 define('MD_TO_HTML_CMD','/usr/bin/redcarpet --parse-fenced-code-blocks {mdfile} > {htmlfile}');// Command to transform MarkDown to HTML ("{mdfile}" is the MarkDown file path, "{htmlfile}" the HTML file path, paths will be shell argument escaped)
 
 // Deny direct access, exit with a forbidden 403 http status
-if(preg_match('/^\/.+\/'.preg_quote('/'.basename(__FILE__),'/').'$/',$_SERVER['SCRIPT_NAME'])){
+if(preg_match('/^\/.+\/'.preg_quote(basename(__FILE__),'/').'$/',$_SERVER['SCRIPT_NAME'])){
 	trigger_error('Direct access denied',E_USER_WARNING);
 	http_response_code(403);
 	exit;
@@ -35,12 +35,10 @@ $finalHtml=null;
 if(SOURCE_FILE===false){
 	// If the source file doesn't exist, exit with a not found 404 http status
 	http_response_code(404);
-	define('CACHED_HTML',null);
 }else if(!preg_match('/^'.preg_quote(__DIR__,'/').'\/.*\.md$/i',SOURCE_FILE)){
 	// If the source file path looks strange, exit with a forbidden 403 http status
 	trigger_error('Source file path looks strange, will not process',E_USER_WARNING);
 	http_response_code(403);
-	define('CACHED_HTML',null);
 }else if(!CACHE_ENABLED||!file_exists(TARGET_FILE)||filemtime(SOURCE_FILE)>filemtime(TARGET_FILE)){
 	// (Re)Create the HTML file
 	http_response_code(200);
