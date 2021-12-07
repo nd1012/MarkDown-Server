@@ -19,7 +19,7 @@ define('MAX_CACHE_TIME',60*60*24*30);// Maximum cache time in seconds (zero to d
 define('MD_TO_HTML_CMD','/usr/bin/redcarpet --parse-fenced-code-blocks {mdfile} > {htmlfile}');// Command to transform MarkDown to HTML ("{mdfile}" is the MarkDown file path, "{htmlfile}" the HTML file path, paths will be shell argument escaped)
 
 // Deny direct access, exit with a forbidden 403 http status
-if(preg_match('/^\/.+\/'.preg_quote(basename(__FILE__),'/').'$/',$_SERVER['SCRIPT_NAME'])){
+if(preg_match('/^\/.+\/'.preg_quote(basename(__FILE__),'/').'$/i',$_SERVER['SCRIPT_NAME'])){
 	trigger_error('Direct access denied',E_USER_WARNING);
 	http_response_code(403);
 	exit;
