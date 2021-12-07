@@ -64,7 +64,7 @@ In the `mdserver.php` file please edit the configuration first:
 Now you're done already:
 
 ```
-https://uri.to/mdwebroot/test.md
+https://uri.to/mdwebroot/index.md
 ```
 
 If you've used the demo files, you should be able to see the generated HTML website in your browser, when you point to this URI.
