@@ -36,15 +36,22 @@ apt install ruby-redcarpet
 
 ## Webspace setup
 
-In the MarkDown webroot you'll need to place a `.htaccess` and the `mdserver.php` file. The PHP script will use a writable folder to cache the generated HTML (which may be the MarkDown webroot folder).
+In the MarkDown webroot you'll need to place a `.htaccess` and the `mdserver.php` file along with the `mdserver.conf.php` file. The PHP script will use a writable folder to cache the generated HTML (which may be the MarkDown webroot folder).
 
 The `.htaccess` file contents:
 
 ```
+# Use index.md as directory index
 DirectoryIndex index.md
+
+# Prepare rewrite
 RewriteEngine on
 RewriteBase /mdwebroot/
-RewriteRule \/md(server|header|footer)(\.hook)?\.(html|php)$ - [NC,F]
+
+# Deny direct access to internal files that shouldn't be called from a browser
+RewriteRule \/md(server|header|footer)(\.hook|\.conf)?\.(html|php)$ - [NC,F]
+
+# Process MarkDown files using the mdserver.php
 RewriteCond %{REQUEST_FILENAME} \.md$ [NC]
 RewriteCond %{LA-U:REQUEST_FILENAME} -f
 RewriteCond %{LA-U:REQUEST_FILENAME} !-d
@@ -53,7 +60,7 @@ RewriteRule ^(.*)$ /path/to/mdwebroot/mdserver.php/$1/ [NC,L]
 
 Please replace `/mdwebroot/` with the MarkDown webroot path of your webspace, and `/path/to/mdwebroot/mdserver.php` with the full local path to the `mdserver.php` file.
 
-In the `mdserver.php` file please edit the configuration first:
+In the `mdserver.conf.php` file please edit the configuration first:
 
 - `HTML_CACHE_DIR`: This should point to a writable folder that will be used as cache folder for the generated HTML files (skip a trailing slash)
 - `CACHE_ENABLED`: If the cache is enabled in general
@@ -67,7 +74,7 @@ Now you're done already:
 https://uri.to/mdwebroot/index.md
 ```
 
-If you've used the demo files, you should be able to see the generated HTML website in your browser, when you point to this URI.
+If you've used the demo files, you should be able to see the generated HTML website in your browser, when you point to this URI (of course replace the dummys with your configured webspace URI).
 
 ## How it works
 
@@ -100,7 +107,7 @@ For an even better performance, the `.htaccess` configuration could try to use t
 
 ## Security
 
-If the called MarkDown file URI can't be resolved to an existing file, or the resolved full file path isn't under the folder that contains the `mdserver.php`, the PHP script will deny processing the request.
+If the called MarkDown file URI can't be resolved to an existing file, or the resolved full file path isn't under the folder that contains the `mdserver.php`, the PHP script will deny processing the request. The maximum URI path length is limited to 4096 characters.
 
 The `.htaccess` will block any access to a `\/md(server|header|footer)(\.hook)?\.(html|php)$` file. So `mdserver.php` can't be accessed directly, which is how it should be, because it should only be possible to run the PHP script from an internal relocation trough a `mod_rewrite` rule. Anyway, the `mdserver.php` contains an accessibility check, too.
 

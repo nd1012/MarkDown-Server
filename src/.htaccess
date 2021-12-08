@@ -1,7 +1,14 @@
+# Use index.md as directory index
 DirectoryIndex index.md
+
+# Prepare rewrite
 RewriteEngine on
 RewriteBase /mdwebroot/
-RewriteRule \/md(server|header|footer)(\.hook)?\.(html|php)$ - [NC,F]
+
+# Deny direct access to internal files that shouldn't be called from a browser
+RewriteRule \/md(server|header|footer)(\.hook|\.conf)?\.(html|php)$ - [NC,F]
+
+# Process MarkDown files using the mdserver.php
 RewriteCond %{REQUEST_FILENAME} \.md$ [NC]
 RewriteCond %{LA-U:REQUEST_FILENAME} -f
 RewriteCond %{LA-U:REQUEST_FILENAME} !-d
