@@ -2,13 +2,95 @@
 
 /**
  * @author Andreas Zimmermann, wan24.de
- * @version 2
+ * @version 3
  * @license MIT
  * @github https://github.com/nd1012/MarkDown-Server
  */
 
+/**
+ * Get a substring
+ * 
+ * @param string $str String
+ * @param int $start Start
+ * @param int $len Length
+ * @return string Substring
+ */
+function getsubstr($str,$start,$len){
+	$res=function_exists('mb_substr')?mb_substr($str,$start,$len):substr($str,$start,$len);
+	return $res===false?'':$res;
+}
+
+/**
+ * Get the start of a string
+ * 
+ * @param string $str String
+ * @param int $len Length
+ * @return string Start
+ */
+function strstart($str,$len){
+	return getsubstr($str,0,$len);
+}
+
+/**
+ * Get the end of a string
+ * 
+ * @param string $str String
+ * @param int $len Length
+ * @return string End
+ */
+function strend($str,$len){
+	return getsubstr($str,getstrlen($str)-$len,$len);
+}
+
+/**
+ * Get the length of a string
+ * 
+ * @param string $str String
+ * @return int Length
+ */
+function getstrlen($str){
+	$res=function_exists('mb_strlen')?mb_strlen($str):strlen($str);
+	return $res===false?strlen($str):$res;
+}
+
+/**
+ * Find the position of a string within a string
+ * 
+ * @param string $str String
+ * @param string $find String to find
+ * @return int Position or -1, if not found
+ */
+function getstrpos($str,$find){
+	$res=function_exists('mb_strpos')?mb_strpos($str,$find):strpos($str,$find);
+	return $res===false?-1:$res;
+}
+
+/**
+ * Get a string with all characters converted to lower letters
+ * 
+ * @param string $str String
+ * @return string String
+ */
+function getlowerstr($str){
+	return function_exists('mb_strtolower')?mb_strtolower($str):strtolower($str);
+}
+
+/**
+ * Ensure having an UTF-8 encoded string
+ * 
+ * __NOTE__: This works on already UTF-8 encoded or ISO-8859-1 encoded strings only!
+ * 
+ * @param string $str String
+ * @return string UTF-8 encoded string
+ */
+function utf8encoded($str){
+	return !function_exists('mb_detect_encoding')||mb_detect_encoding($str,'UTF-8',true)!==false
+		?$str
+		:utf8_encode($str);
+}
+
 // Deny direct access, exit with a forbidden 403 http status
-if(!isset($_SERVER['REDIRECT_URL'])||strtolower(substr($_SERVER['REDIRECT_URL'],strlen($_SERVER['REDIRECT_URL'])-3))!='.md'){
+if(!isset($_SERVER['REDIRECT_URL'])||getlowerstr(strend($_SERVER['REDIRECT_URL'],3))!='.md'){
 	trigger_error('Direct script access from a browser is denied',E_USER_WARNING);
 	http_response_code(403);
 	exit;
@@ -16,7 +98,17 @@ if(!isset($_SERVER['REDIRECT_URL'])||strtolower(substr($_SERVER['REDIRECT_URL'],
 
 // Load and validate the configuration
 require __DIR__.'/mdserver.conf.php';
-if(!defined('HTML_CACHE_DIR')||(!is_null(HTML_CACHE_DIR)&&(substr(HTML_CACHE_DIR,strlen(HTML_CACHE_DIR)-1)=='/'||!is_dir(HTML_CACHE_DIR))))
+if(
+	!defined('HTML_CACHE_DIR')||
+	(
+		!is_null(HTML_CACHE_DIR)&&
+		(
+			!is_string(HTML_CACHE_DIR)||
+			strend(HTML_CACHE_DIR,1)=='/'||
+			realpath(HTML_CACHE_DIR)===false // Because realpath uses a cache
+			)
+		)
+	)
 	trigger_error('Missing or invalid HTML_CACHE_DIR configuration constant',E_USER_ERROR);
 if(!defined('CACHE_ENABLED')||!is_bool(CACHE_ENABLED))
 	trigger_error('Missing or invalid CACHE_ENABLED configuration constant',E_USER_ERROR);
@@ -24,24 +116,24 @@ if(!defined('MKDIR_MODE')||!is_int(MKDIR_MODE)||MKDIR_MODE<0||MKDIR_MODE>7777)
 	trigger_error('Missing or invalid MKDIR_MODE confiruration constant',E_USER_ERROR);
 if(!defined('MAX_CACHE_TIME')||!is_int(MAX_CACHE_TIME))
 	trigger_error('Missing or invalid MAX_CACHE_TIME configuration constant',E_USER_ERROR);
-if(!defined('MD_TO_HTML_CMD')||!is_string(MD_TO_HTML_CMD)||strpos(MD_TO_HTML_CMD,'{mdfile}')<0)
+if(!defined('MD_TO_HTML_CMD')||!is_string(MD_TO_HTML_CMD)||getstrpos(MD_TO_HTML_CMD,'{mdfile}')<0)
 	trigger_error('Missing or invalid MD_TO_HTML_CMD configuration constant',E_USER_ERROR);
 
 // Internal constants/variables
-define('PATH_LEN',isset($_SERVER['PATH_INFO'])?strlen($_SERVER['PATH_INFO']):null);
+define('PATH_LEN',isset($_SERVER['PATH_INFO'])?getstrlen($_SERVER['PATH_INFO']):null);
 if(
 	is_null(PATH_LEN)||
 	PATH_LEN<4||// Supports at last "/.md"
 	PATH_LEN>4096||
-	substr($_SERVER['PATH_INFO'],0,1)!='/'||
-	strtolower(substr($_SERVER['PATH_INFO'],strlen($_SERVER['PATH_INFO'])-4))!='.md/'
+	strstart($_SERVER['PATH_INFO'],1)!='/'||
+	getlowerstr(strend($_SERVER['PATH_INFO'],4))!='.md/'
 	){
 	// If the called path is suspect, exit with a bad request 400 http status
 	trigger_error('Missing or malformed path info in webserver environment',E_USER_WARNING);
 	http_response_code(400);
 	exit;
 }
-define('CALLED_PATH',substr($_SERVER['PATH_INFO'],0,strlen($_SERVER['PATH_INFO'])-1));// Called path without the trailing slash
+define('CALLED_PATH',strstart($_SERVER['PATH_INFO'],getstrlen($_SERVER['PATH_INFO'])-1));// Called path without the trailing slash
 define('SOURCE_FILE',realpath(__DIR__.CALLED_PATH));// Existing source MarkDown file full path
 if(!is_string(SOURCE_FILE)||!file_exists(SOURCE_FILE)){
 	// If the source MarkDown files full path can't be resolved (or the file doesn't exist), exit with a not found 404 http status
@@ -52,7 +144,7 @@ define('TARGET_FILE',is_null(HTML_CACHE_DIR)?null:HTML_CACHE_DIR.CALLED_PATH.'.h
 
 // Get the output HTML
 if(!CACHE_ENABLED||is_null(TARGET_FILE)||!file_exists(TARGET_FILE)||filemtime(SOURCE_FILE)>filemtime(TARGET_FILE)){
-	// (Re)Create the HTML file
+	// (Re)Create the HTML
 	http_response_code(200);
 	// Ensure the HTML cache target directory exists
 	if(!is_null(TARGET_FILE)){
@@ -65,15 +157,15 @@ if(!CACHE_ENABLED||is_null(TARGET_FILE)||!file_exists(TARGET_FILE)||filemtime(SO
 		}
 	}
 	// Find a temporary filename
-	define('TEMP_FILE',is_null(TARGET_FILE)?null:TARGET_FILE.'.'.uniqid().'.temp');
+	define('TEMP_FILE',is_null(TARGET_FILE)?null:TARGET_FILE.uniqid().'.temp');
 	// Parse the converter command
 	$cmd=MD_TO_HTML_CMD;
 	foreach(Array(
-		'mdfile'		=>	SOURCE_FILE,
-		'htmlfile'		=>	is_null(TEMP_FILE)?'':TEMP_FILE
+		'{mdfile}'			=>	SOURCE_FILE,
+		'{htmlfile}'		=>	is_null(TEMP_FILE)?'':TEMP_FILE
 		) as $var=>$val)
-		if(strpos($cmd,'{'.$var.'}')>-1)
-			$cmd=str_replace('{'.$var.'}',escapeshellarg($val),$cmd);
+		if(getstrpos($cmd,$var)>-1)
+			$cmd=str_replace($var,escapeshellarg($val),$cmd);
 	// Generate the HTML
 	if(!is_null(TEMP_FILE)){
 		// The command will write the generated HTML to a temporary file
@@ -104,7 +196,7 @@ if(!CACHE_ENABLED||is_null(TARGET_FILE)||!file_exists(TARGET_FILE)||filemtime(SO
 		define('GENERATED_HTML',$temp);
 	}
 	// UTF-8 encode the generated HTML
-	define('CACHED_HTML',utf8_encode(GENERATED_HTML));
+	define('CACHED_HTML',utf8encoded(GENERATED_HTML));
 	$finalHtml=CACHED_HTML;
 	// Execute the PHP hook
 	$file=__DIR__.'/mdserver.hook.php';
