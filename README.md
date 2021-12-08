@@ -76,6 +76,8 @@ https://uri.to/mdwebroot/index.md
 
 If you've used the demo files, you should be able to see the generated HTML website in your browser, when you point to this URI (of course replace the dummys with your configured webspace URI).
 
+To see how the served `index.md` from the `demo` folder should look: [https://nd1012.github.io/MarkDown-Server/demo.html](https://nd1012.github.io/MarkDown-Server/demo.html).
+
 ## How it works
 
 The `.htaccess` configuration will make an internal redirect to the `mdserver.php` file, which then outputs the generated HTML. For this, the PHP script will have a look at the cache folder structure, if the HTML file exists. The HTML filename is the MarkDown filename with the `.html` postfix. Every time you update the MarkDown source file, the PHP script will re-create the HTML file to the cache folder structure next time a browser tries to access it. This is how the server-side cache works.
