@@ -109,7 +109,7 @@ For an even better performance, the `.htaccess` configuration could try to use t
 
 If the called MarkDown file URI can't be resolved to an existing file, or the resolved full file path isn't under the folder that contains the `mdserver.php`, the PHP script will deny processing the request. The maximum URI path length is limited to 4096 characters.
 
-The `.htaccess` will block any access to a `\/md(server|header|footer)(\.hook)?\.(html|php)$` file. So `mdserver.php` can't be accessed directly, which is how it should be, because it should only be possible to run the PHP script from an internal relocation trough a `mod_rewrite` rule. Anyway, the `mdserver.php` contains an accessibility check, too.
+The `.htaccess` will block any access to a `\/md(server|header|footer)(\.hook|\.conf)?\.(html|php)$` file. So `mdserver.php` can't be accessed directly, which is how it should be, because it should only be possible to run the PHP script from an internal relocation trough a `mod_rewrite` rule. Anyway, the `mdserver.php` contains an accessibility check, too.
 
 ## Customizing the output HTML
 

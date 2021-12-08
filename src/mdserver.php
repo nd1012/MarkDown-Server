@@ -16,7 +16,7 @@ if(!isset($_SERVER['REDIRECT_URL'])||strtolower(substr($_SERVER['REDIRECT_URL'],
 
 // Load and validate the configuration
 require __DIR__.'/mdserver.conf.php';
-if(!defined('HTML_CACHE_DIR')||!is_string(HTML_CACHE_DIR)||substr(HTML_CACHE_DIR,strlen(HTML_CACHE_DIR)-1)=='/'||!is_dir(HTML_CACHE_DIR))
+if(!defined('HTML_CACHE_DIR')||(!is_null(HTML_CACHE_DIR)&&(substr(HTML_CACHE_DIR,strlen(HTML_CACHE_DIR)-1)=='/'||!is_dir(HTML_CACHE_DIR))))
 	trigger_error('Missing or invalid HTML_CACHE_DIR configuration constant',E_USER_ERROR);
 if(!defined('CACHE_ENABLED')||!is_bool(CACHE_ENABLED))
 	trigger_error('Missing or invalid CACHE_ENABLED configuration constant',E_USER_ERROR);
