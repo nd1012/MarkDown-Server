@@ -1,4 +1,6 @@
 
+<!DOCTYPE html>
+<html lang="en">
 <!-- Add some basic style -->
 <style>
 /* A simple color model */
@@ -33,6 +35,18 @@ h1,h2,h3,h4,h5,h6{
 	font-family:Calibri,Verdana;
 	color:var(--color3);
 }
+h1,h2{
+	border-bottom:1px solid var(--color3);
+}
+
+/* Links */
+a{
+	color:#58a6ff !important;
+	text-decoration:none;
+}
+a:hover{
+	text-decoration:underline;
+}
 
 /* Inline code */
 code:not([class]){
@@ -54,7 +68,52 @@ pre>code{
 </style>
 
 <!-- The generated HTML -->
-<h1>PHP MarkDown Server</h1>
+<h1 id="php-markdown-server">PHP MarkDown Server</h1>
+
+<h2 id="table-of-contents">Table of contents</h2>
+
+<ul>
+<li><a href="#what-is">What is...</a></li>
+<li><a href="#pre-requirements">Pre-requirements</a>
+
+<ul>
+<li><a href="#markdown-converter-debian-linux-setup">MarkDown converter Debian Linux setup</a>
+
+<ul>
+<li><a href="#using-markdown-as-converter">Using <code>markdown</code> as converter</a></li>
+<li><a href="#using-redcarpet-as-converter">Using <code>redcarpet</code> as converter</a></li>
+</ul></li>
+<li><a href="#using-a-php-script-as-converter">Using a PHP script as converter</a></li>
+</ul></li>
+<li><a href="#webspace-setup">Webspace setup</a></li>
+<li><a href="#how-it-works">How it works</a></li>
+<li><a href="#caching">Caching</a>
+
+<ul>
+<li><a href="#apcu-in-memory-caching">APCu in-memory-caching</a>
+
+<ul>
+<li><a href="#clear-the-apcu-cache">Clear the APCu cache</a></li>
+</ul></li>
+<li><a href="#disable-caching">Disable caching</a>
+
+<ul>
+<li><a href="#server-side-cache">Server-side cache</a></li>
+<li><a href="#browser-cache">Browser cache</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#performance">Performance</a></li>
+<li><a href="#security">Security</a></li>
+<li><a href="#customizing-the-output-html">Customizing the output HTML</a>
+
+<ul>
+<li><a href="#adding-a-header-footer">Adding a header/footer</a></li>
+<li><a href="#using-a-php-hook">Using a PHP hook</a></li>
+</ul></li>
+<li><a href="#known-issues-limitations">Known issues/limitations</a></li>
+</ul>
+
+<h2 id="what-is">What is...</h2>
 
 <p><a href="https://www.markdownguide.org/">MarkDown</a> is used in many places for writing documentations and other stuff and widely supported in many environments. However, creating websites using MarkDown isn&#39;t a really new idea (-&gt; GitHub pages), but how could you serve a MarkDown website DIY?</p>
 
@@ -65,34 +124,53 @@ pre>code{
 <ul>
 <li>Custom header/footer</li>
 <li>Client/Server cache</li>
+<li>Support for CLI or PHP MarkDown converter</li>
 <li>PHP hook</li>
 </ul>
 
-<h2>Pre-requirements</h2>
+<h2 id="pre-requirements">Pre-requirements</h2>
 
 <ol>
 <li>Apache webserver with <code>mod_rewrite</code> enabled and <code>.htaccess</code> configured</li>
 <li>PHP</li>
-<li>Any CLI MarkDown to HTML converter</li>
+<li>Any CLI or PHP MarkDown to HTML converter</li>
 </ol>
 
-<h3>MarkDown converter Debian Linux setup</h3>
+<h3 id="markdown-converter-debian-linux-setup">MarkDown converter Debian Linux setup</h3>
 
-<h4>Using <code>markdown</code> as converter</h4>
+<h4 id="using-markdown-as-converter">Using <code>markdown</code> as converter</h4>
 
 <pre><code>apt install markdown
 </code></pre>
 
 <p>(Example command line is in <code>mdserver.php</code>)</p>
 
-<h4>Using <code>redcarpet</code> as converter</h4>
+<h4 id="using-redcarpet-as-converter">Using <code>redcarpet</code> as converter</h4>
 
 <pre><code>apt install ruby-redcarpet
 </code></pre>
 
 <p>(Example command line is in <code>mdserver.php</code>)</p>
 
-<h2>Webspace setup</h2>
+<h3 id="using-a-php-script-as-converter">Using a PHP script as converter</h3>
+
+<p>In the <code>mdserver.conf.php</code> configuration file the constant <code>MD_TO_HTML_CMD</code> actually defines the shell command to be executed for converting MarkDown to HTML. If you want to call a static PHP method or a global PHP function instead, you can use this special syntax for the constant value:</p>
+
+<pre><code>@/path/to/include.php:\Your\NameSpace\ClassName::MethodName
+</code></pre>
+
+<p>This would call the static method <code>MethodName</code> of the class <code>\Your\NameSpace\ClassName</code> that will be defined by loading the PHP include <code>/path/to/include.php</code>, giving the full source MarkDown and temporary HTML file paths as parameters.</p>
+
+<pre><code>@/path/to/include.php:\Your\NameSpace\FunctionName
+</code></pre>
+
+<p>This would call the global function <code>\Your\NameSpace\FunctionName</code> that will be defined by loading the PHP include <code>/path/to/include.php</code>, giving the full source MarkDown and temporary HTML file paths as parameters.</p>
+
+<p>The temporary HTML file path (second parameter) may be <code>NULL</code>. If so, the method/function is required to return the generated HTML. Otherwise the generated HTML has to be written to the temporary HTML file.</p>
+
+<p>Use this way, if you want to use a pure PHP MarkDown converter, for example.</p>
+
+<h2 id="webspace-setup">Webspace setup</h2>
 
 <p>In the MarkDown webroot you&#39;ll need to place a <code>.htaccess</code> and the <code>mdserver.php</code> file along with the <code>mdserver.conf.php</code> file. The PHP script will use a writable folder to cache the generated HTML (which may be the MarkDown webroot folder).</p>
 
@@ -122,9 +200,13 @@ RewriteRule ^(.*)$ /path/to/mdwebroot/mdserver.php/$1/ [NC,L]
 <ul>
 <li><code>HTML_CACHE_DIR</code>: This should point to a writable folder that will be used as cache folder for the generated HTML files (skip a trailing slash)</li>
 <li><code>CACHE_ENABLED</code>: If the cache is enabled in general</li>
+<li><code>USE_APCU</code>: Use APCu (in-memory-cache) for caching generated HTML?</li>
+<li><code>APCU_TTL</code>: APCu TTL in seconds (should be greater than zero - however, zero would disable TTL)</li>
 <li><code>MKDIR_MODE</code>: The filesystem access mode for new folders within the cache folder</li>
 <li><code>MAX_CACHE_TIME</code>: Maximum client cache time in seconds (this value will be sent to a client browser)</li>
 <li><code>MD_TO_HTML_CMD</code>: CLI command to use to convert a MarkDown file to HTML (variables <code>{mdfile}</code> points to the full local MarkDown file path, <code>{htmlfile}</code> to the full local HTML file path, both values are shell argument escaped)</li>
+<li><code>DISABLE_HEADER_FOOTER</code>: Disable header/footer customization?</li>
+<li><code>DISABLE_HOOK</code>: Disable the PHP hook?</li>
 </ul>
 
 <p>Now you&#39;re done already:</p>
@@ -136,9 +218,10 @@ RewriteRule ^(.*)$ /path/to/mdwebroot/mdserver.php/$1/ [NC,L]
 
 <p>To see how the served <code>index.md</code> from the <code>demo</code> folder should look: <a href="https://nd1012.github.io/MarkDown-Server/demo.html">https://nd1012.github.io/MarkDown-Server/demo.html</a>.</p>
 
-<h2>How it works</h2>
+<h2 id="how-it-works">How it works</h2>
 
-<p>The <code>.htaccess</code> configuration will make an internal redirect to the <code>mdserver.php</code> file, which then outputs the generated HTML. For this, the PHP script will have a look at the cache folder structure, if the HTML file exists. The HTML filename is the MarkDown filename with the <code>.html</code> postfix. Every time you update the MarkDown source file, the PHP script will re-create the HTML file to the cache folder structure next time a browser tries to access it. This is how the server-side cache works.</p>
+<p>The <code>.htaccess</code> configuration will make an internal redirect to the <code>mdserver.php</code> file, which then outputs the generated HTML. For this, the PHP script will have a look at the cache folder structure, if the HTML file exists. The HTML filename is the MarkDown filename with the <code>.html</code> postfix. Every time you update the MarkDown source file, the PHP script will re-create the HTML file to the cache folder structure next time a browser tries to access it. This is how the server-side cache works, when not using APCu.
+If APCu is available and enabled, nothing will be cached in the HTML cache folder, but instead an in-memory-cache entry will be managed.</p>
 
 <p>The client-side cache is managed by the browser, the PHP script will only tell the browser some basic information:</p>
 
@@ -149,42 +232,104 @@ RewriteRule ^(.*)$ /path/to/mdwebroot/mdserver.php/$1/ [NC,L]
 
 <p>Links to other MarkDown files can be written as usual, but they should point to a MarkDown file (not a cached HTML file, even if it&#39;s browser accessable).</p>
 
-<h2>Disable caching</h2>
+<h2 id="caching">Caching</h2>
 
-<h3>Server-side cache</h3>
+<h3 id="apcu-in-memory-caching">APCu in-memory-caching</h3>
+
+<p>If APCu is available and enabled (<code>USE_APCU</code> is <code>true</code>), the MarkDown server would cache generated HTML in memory, instead of writing to the 
+HTML cache folder. The advantage is, that in-memory-cache access is much faster than reading/writing from/to a filesystem. The disadvantage is 
+that the cache will be lost, if the caching engine or the server was restarted.</p>
+
+<p>The cache key is a combination of the full path to the <code>mdserver.php</code>, combined with a <code>:</code>, and the relative HTML cache filename - for 
+example:</p>
+
+<ul>
+<li>Full path is <code>/path/to/mdwebroot/mdserver.php</code></li>
+<li>URI was <code>https://uri.to/mdwebroot/folder/file.md</code></li>
+</ul>
+
+<p>The cache key would be:</p>
+
+<pre><code>/path/to/mdwebroot/mdserver.php:/folder/file.md
+</code></pre>
+
+<p>To display all cached values, you can use the PHP script <code>apcucache.php</code> in the <code>contrib</code> folder. Place this PHP script in the same folder 
+as the <code>mdserver.php</code> file and call it from your browser.</p>
+
+<p><strong>NOTE</strong>: Be sure to delete the file from your webspace after usage!</p>
+
+<h4 id="clear-the-apcu-cache">Clear the APCu cache</h4>
+
+<p>When you want to clear the APCu cache, you have two options, which are available from PHP scripts in the <code>contrib</code> folder:</p>
+
+<ol>
+<li>Delete all cache keys that belong to MarkDown source files that don&#39;t exist anymore (use <code>tidyapcucache.php</code>)</li>
+<li>Delete all cache keys (use <code>clearapcucache.php</code>)</li>
+</ol>
+
+<p>Place the desired PHP script in the same folder as the <code>mdserver.php</code> file and call it from your browser.</p>
+
+<p><strong>NOTE</strong>: Be sure to delete the file from your webspace after usage!</p>
+
+<p>Clearing the APCu cache from the CLI is a bit difficult, because the APCu cache used in Apache  is different from the one that a CLI PHP uses. If you&#39;re looking for a CLI solution for clearing the APCu cache, maybe the <a href="https://github.com/gordalina/cachetool">CacheTool</a> could help.</p>
+
+<h3 id="disable-caching">Disable caching</h3>
+
+<h4 id="server-side-cache">Server-side cache</h4>
 
 <p>To disable the server-side cache, simply set the value of the constant <code>CACHE_ENABLED</code> to <code>false</code>. But will still use the filesystem, if the MarkDown converter wants to write a file.</p>
 
 <p>To avoid using the filesystem here, the MarkDown converter needs to be able to output the HTML to the shell (modify the <code>MD_TO_HTML_CMD</code> value). As soon as you disabled the server-side cache and modified the MarkDown converter command to output HTML to the shell, you can set the value of <code>HTML_CACHE_DIR</code> to <code>null</code>.</p>
 
-<h3>Browser cache</h3>
+<h4 id="browser-cache">Browser cache</h4>
 
 <p>To disable the browser cache support, simply set <code>MAX_CACHE_TIME</code> to <code>0</code>. This will avoid to interpret the received cache headers or send and cache headers to the client.</p>
 
-<h2>Performance</h2>
+<h2 id="performance">Performance</h2>
 
 <p>Of course converting MarkDown to HTML will take some time and use resources. But as soon as the converter is done, the generated HTML will be cached and re-used until you modify the MarkDown source file. All in all this results in a very good performance already.</p>
 
 <p>For an even better performance, the <code>.htaccess</code> configuration could try to use the previously cached HTML file and only use the PHP script, if the HTML file doesn&#39;t exist. For this the <code>HTML_CACHE_DIR</code> should point to the MarkDown webroot. However, this option would skip the whole (server- AND client-side) cache control of the PHP script, and you would have to delete the HTML versions of updated MarkDown source files manually!</p>
 
-<h2>Security</h2>
+<p>The absolutely best performance will (of course) be reached using the APCu in-memory-cache.</p>
 
-<p>If the called MarkDown file URI can&#39;t be resolved to an existing file, or the resolved full file path isn&#39;t under the folder that contains the <code>mdserver.php</code>, the PHP script will deny processing the request. The maximum URI path length is limited to 4096 characters.</p>
+<h2 id="security">Security</h2>
+
+<p>If the called MarkDown file URI can&#39;t be resolved to an existing file, or the resolved full file path isn&#39;t under the folder that contains the <code>mdserver.php</code>, the PHP script will deny processing the request. The maximum URI path length is limited to 4095 characters.</p>
 
 <p>The <code>.htaccess</code> will block any access to a <code>\/md(server|header|footer)(\.hook|\.conf)?\.(html|php)$</code> file. So <code>mdserver.php</code> can&#39;t be accessed directly, which is how it should be, because it should only be possible to run the PHP script from an internal relocation trough a <code>mod_rewrite</code> rule. Anyway, the <code>mdserver.php</code> contains an accessibility check, too.</p>
 
-<h2>Customizing the output HTML</h2>
+<h2 id="customizing-the-output-html">Customizing the output HTML</h2>
 
-<h3>Adding a header/footer</h3>
+<h3 id="adding-a-header-footer">Adding a header/footer</h3>
 
-<p>You can define the HTML to prepend/append to the generated HTML using the files <code>mdheader.html</code> and <code>mdfooter.html</code>. The header/footer won&#39;t be cached, so it may be modified at any time without having to clear the server side cache.</p>
+<p>You can define the HTML to prepend/append to the generated HTML using the files <code>mdheader.html</code> (and/or <code>mdheader.php</code>) and <code>mdfooter.html</code> (and/or <code>mdfooter.php</code>). The header/footer won&#39;t be cached, so it may be modified at any time without having to clear the server side cache. The loading order is:</p>
 
-<h3>Using a PHP hook</h3>
+<ul>
+<li><code>mdheader.php</code></li>
+<li><code>mdheader.html</code></li>
+<li><code>mdfooter.html</code></li>
+<li><code>mdfooter.php</code></li>
+</ul>
+
+<h3 id="using-a-php-hook">Using a PHP hook</h3>
 
 <p>Before the generated HTML is being written do the cache, a PHP script with the name <code>mdserver.hook.php</code> has the chance to modify the generated HTML and write the final HTML to use from and in the variable <code>$finalHtml</code>. If the value of <code>$finalHtml</code> is <code>null</code>, nothing will be sent to the client. If the value is an empty string, only the cache headers will be sent to the client.</p>
+
+<h2 id="known-issues-limitations">Known issues/limitations</h2>
+
+<ul>
+<li>Maximum request URI path length (relative to the MarkDown webroot (the folder that includes <code>mdserver.php</code>)) is 4095 characters</li>
+<li>Symbolic links that point outside of the MarkDown webroot (the folder that includes <code>mdserver.php</code>) can&#39;t be served</li>
+<li>MarkDown source files must use the <code>.md</code> extension (case is ignored)</li>
+<li>Deleted MarkDown source files won&#39;t be deleted from the HTML cache</li>
+<li>For a better string encoding compatibility, the PHP extension <code>mbstring</code> should to be installed and activated</li>
+<li>Generated and cached HTML will stored in memory for processing, what may be a problem when working with huge files</li>
+</ul>
 
 <!-- Add syntax highlighting -->
 <link rel="stylesheet" media="(prefers-color-scheme: light)" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/base16/default-light.min.css">
 <link rel="stylesheet" media="(prefers-color-scheme: dark" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/base16/default-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
 <script>hljs.highlightAll();</script>
+</html>
