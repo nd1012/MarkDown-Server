@@ -21,6 +21,7 @@
 - [Customizing the output HTML](#customizing-the-output-html)
 	- [Adding a header/footer](#adding-a-header-footer)
 	- [Using a PHP hook](#using-a-php-hook)
+	- [Handle the HTML output](#handle-the-html-output)
 - [Known issues/limitations](#known-issues-limitations)
 
 ## What is...
@@ -95,7 +96,7 @@ RewriteEngine on
 RewriteBase /mdwebroot/
 
 # Deny direct access to internal files that shouldn't be called from a browser
-RewriteRule \/md(server|header|footer)(\.hook|\.conf)?\.(html|php)$ - [NC,F]
+RewriteRule \/md(server|header|footer)(\..+)?\.(html|php)$ - [NC,F]
 
 # Process MarkDown files using the mdserver.php
 RewriteCond %{REQUEST_FILENAME} \.md$ [NC]
@@ -144,12 +145,9 @@ Links to other MarkDown files can be written as usual, but they should point to 
 
 ### APCu in-memory-caching
 
-If APCu is available and enabled (`USE_APCU` is `true`), the MarkDown server would cache generated HTML in memory, instead of writing to the 
-HTML cache folder. The advantage is, that in-memory-cache access is much faster than reading/writing from/to a filesystem. The disadvantage is 
-that the cache will be lost, if the caching engine or the server was restarted.
+If APCu is available and enabled (`USE_APCU` is `true`), the MarkDown server would cache generated HTML in memory, instead of writing to the HTML cache folder. The advantage is, that in-memory-cache access is much faster than reading/writing from/to a filesystem. The disadvantage is that the cache will be lost, if the caching engine or the server was restarted.
 
-The cache key is a combination of the full path to the `mdserver.php`, combined with a `:`, and the relative HTML cache filename - for 
-example:
+The cache key is a combination of the full path to the `mdserver.php`, combined with a `:`, and the relative HTML cache filename - for example:
 
 - Full path is `/path/to/mdwebroot/mdserver.php`
 - URI was `https://uri.to/mdwebroot/folder/file.md`
@@ -160,8 +158,7 @@ The cache key would be:
 /path/to/mdwebroot/mdserver.php:/folder/file.md
 ```
 
-To display all cached values, you can use the PHP script `apcucache.php` in the `contrib` folder. Place this PHP script in the same folder 
-as the `mdserver.php` file and call it from your browser.
+To display all cached values, you can use the PHP script `apcucache.php` in the `contrib` folder. Place this PHP script in the same folder as the `mdserver.php` file and call it from your browser.
 
 **NOTE**: Be sure to delete the file from your webspace after usage!
 
@@ -192,17 +189,56 @@ To disable the browser cache support, simply set `MAX_CACHE_TIME` to `0`. This w
 
 ## Performance
 
-Of course converting MarkDown to HTML will take some time and use resources. But as soon as the converter is done, the generated HTML will be cached and re-used until you modify the MarkDown source file. All in all this results in a very good performance already.
+Of course converting MarkDown to HTML will take some time and use resources. But as soon as the converter is done, the generated HTML will be cached and re-used unless you modify the MarkDown source file. All in all this results in a very good performance already.
 
 For an even better performance, the `.htaccess` configuration could try to use the previously cached HTML file and only use the PHP script, if the HTML file doesn't exist. For this the `HTML_CACHE_DIR` should point to the MarkDown webroot. However, this option would skip the whole (server- AND client-side) cache control of the PHP script, and you would have to delete the HTML versions of updated MarkDown source files manually!
 
-The absolutely best performance will (of course) be reached using the APCu in-memory-cache.
+The absolutely best performance will (of course) be reached using the APCu in-memory-cache. Use these tips for the best performance:
+
+- Ensure APCu is useable and set the `APCU_TTL` value to zero (this won't expire cached entries unless their source MarkDown file was changed)
+- Don't use a cache folder (set `HTML_CACHE_DIR` to `NULL`)
+- Use a PHP MarkDown converter that returns the generated HTML, or use a CLI converter that writes the generated HTML to STDOUT
+- Prefer a fast PHP MarkDown converter, if possible
+- Optional disable the PHP hook
+- Optional disable header/footer (if you don't want to use the `mdheader.php` to define a `markdown_server_output` function)
+- Optional produce (GZip) compressed HTML and use a `markdown_server_output` function (see [Handle the HTML output](#handle-the-html-output)) that sends the correct http headers (this would save memory and CPU resources) and defines the value `TRUE` for the constant `DISABLE_FOOTER` to avoid looking for non-existing footer files
+
+Instead of using the PHP hook or a header/footer, you could change the `MD_TO_HTML_CMD` constant value to point to a PHP method/function that calls the MarkDown converter and does all modifications (adding header/footer f.e.) in one place. The resulting HTML would then be cached including header/footer, what will save time, but - of course - uses more cache memory.
+
+I've tested these tips with an optimized demo environment using a small 4 US$ VServer with only 1 CPU and 2 GB RAM. The median ping response of the server is 208 ms (slow, yes, because I ping from Asia to Europe), and the browser network monitor shows a median time of 214 ms for loading the http response from that server - which means the https (v1.1) overhead including server processing time was only about 6 ms with that setup:
+
+`DISABLE_HOOK` was set to `TRUE`, `HTML_CACHE_DIR` was set to `NULL`, `MD_TO_HTML_CMD` contains `@/path/to/mdwebroot/mdserver.parser.php:parse_md`.
+
+`mdserver.parser.php` contents:
+
+```php
+<?php
+
+function parse_md($md,$html){
+	$cmd='/usr/bin/redcarpet --parse-fenced-code-blocks --render-with-toc-data '.escapeshellarg($md);
+	return gzencode(file_get_contents(__DIR__.'/mdheader.html').`$cmd`.file_get_contents(__DIR__.'/mdfooter.html'),9);
+}
+```
+
+`mdheader.php` contents:
+
+```php
+<?php
+
+function markdown_server_output($finalHtml){
+	define('DISABLE_FOOTER',true);
+	ini_set('zlib.output_compression','Off');
+	header('Content-Encoding: gzip',true);
+	header('Content-Length: '.strlen($finalHtml));
+	echo $finalHtml;
+}
+```
 
 ## Security
 
 If the called MarkDown file URI can't be resolved to an existing file, or the resolved full file path isn't under the folder that contains the `mdserver.php`, the PHP script will deny processing the request. The maximum URI path length is limited to 4095 characters.
 
-The `.htaccess` will block any access to a `\/md(server|header|footer)(\.hook|\.conf)?\.(html|php)$` file. So `mdserver.php` can't be accessed directly, which is how it should be, because it should only be possible to run the PHP script from an internal relocation trough a `mod_rewrite` rule. Anyway, the `mdserver.php` contains an accessibility check, too.
+The `.htaccess` will block any access to a `\/md(server|header|footer)(\..+)?\.(html|php)$` file. So `mdserver.php` can't be accessed directly, which is how it should be, because it should only be possible to run the PHP script from an internal relocation trough a `mod_rewrite` rule. Anyway, the `mdserver.php` contains an accessibility check, too.
 
 ## Customizing the output HTML
 
@@ -219,11 +255,26 @@ You can define the HTML to prepend/append to the generated HTML using the files 
 
 Before the generated HTML is being written do the cache, a PHP script with the name `mdserver.hook.php` has the chance to modify the generated HTML and write the final HTML to use from and in the variable `$finalHtml`. If the value of `$finalHtml` is `null`, nothing will be sent to the client. If the value is an empty string, only the cache headers will be sent to the client.
 
+### Handle the HTML output
+
+To handle the HTML output by yourself, you can write the global function `markdown_server_output`, that will be called to output the generated HTML - for example:
+
+```php
+markdown_server_output($finalHtml){
+	// You may modify the sent headers or $finalHtml here
+	echo $finalHtml;
+}
+```
+
+You could place this function in the `mdheader.php` file that will be included. If you didn't use a HTML header, and the `mdheader.php` didn't output anything, you could modify the sent http headers within the `markdown_server_output` function, before you send the HTML to the browser.
+
+**TIP**: If you use the `mdheader.php` to define this function, and you want to avoid looking for non-existing footer files, define the value `TRUE` for the constant `DISABLE_FOOTER`.
+
 ## Known issues/limitations
 
 - Maximum request URI path length (relative to the MarkDown webroot (the folder that includes `mdserver.php`)) is 4095 characters
 - Symbolic links that point outside of the MarkDown webroot (the folder that includes `mdserver.php`) can't be served
 - MarkDown source files must use the `.md` extension (case is ignored)
-- Deleted MarkDown source files won't be deleted from the HTML cache
+- Deleted MarkDown source files won't be deleted from the HTML/APCu cache
 - For a better string encoding compatibility, the PHP extension `mbstring` should to be installed and activated
-- Generated and cached HTML will stored in memory for processing, what may be a problem when working with huge files
+- Generated and cached HTML will be stored in memory for processing, what may be a problem when working with huge files

@@ -6,7 +6,7 @@ RewriteEngine on
 RewriteBase /mdwebroot/
 
 # Deny direct access to internal files that shouldn't be called from a browser
-RewriteRule \/md(server|header|footer)(\.hook|\.conf)?\.(html|php)$ - [NC,F]
+RewriteRule \/md(server|header|footer)(\..+)?\.(html|php)$ - [NC,F]
 
 # Process MarkDown files using the mdserver.php
 RewriteCond %{REQUEST_FILENAME} \.md$ [NC]

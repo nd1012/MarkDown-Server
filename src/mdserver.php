@@ -2,7 +2,7 @@
 
 /**
  * @author Andreas Zimmermann, wan24.de
- * @version 3
+ * @version 4
  * @license MIT
  * @github https://github.com/nd1012/MarkDown-Server
  */
@@ -274,7 +274,7 @@ if(!defined('MKDIR_MODE')||!is_int(MKDIR_MODE)||MKDIR_MODE<0||MKDIR_MODE>7777)
 	trigger_error('Missing or invalid MKDIR_MODE configuration constant',E_USER_ERROR);
 if(!defined('MAX_CACHE_TIME')||!is_int(MAX_CACHE_TIME))
 	trigger_error('Missing or invalid MAX_CACHE_TIME configuration constant',E_USER_ERROR);
-if(!defined('MD_TO_HTML_CMD')||!is_string(MD_TO_HTML_CMD)||getstrpos(MD_TO_HTML_CMD,'{mdfile}')<0)
+if(!defined('MD_TO_HTML_CMD')||!is_string(MD_TO_HTML_CMD)||(strstart(MD_TO_HTML_CMD,1)!='@'&&getstrpos(MD_TO_HTML_CMD,'{mdfile}')<0))
 	trigger_error('Missing or invalid MD_TO_HTML_CMD configuration constant',E_USER_ERROR);
 if(!defined('DISABLE_HOOK')||!is_bool(DISABLE_HOOK))
 	trigger_error('Missing or invalid DISABLE_HOOK configuration constant',E_USER_ERROR);
@@ -404,16 +404,26 @@ if(is_string($finalHtml)){
 		header('Content-Type: text/html;charset=utf8',true);
 		if(!DISABLE_HEADER_FOOTER){
 			$file=__DIR__.'/mdheader.php';
-			if(file_exists($file)) require $file;
-			$file=__DIR__.'/mdheader.html';
-			if(file_exists($file)) include $file;
+			if(file_exists($file)){
+				require $file;
+			}else{
+				$file=__DIR__.'/mdheader.html';
+				if(file_exists($file)) include $file;
+			}
 		}
-		echo $finalHtml;
-		if(!DISABLE_HEADER_FOOTER){
+		if(function_exists('markdown_server_output')){
+			markdown_server_output($finalHtml);
+		}else{
+			echo $finalHtml;
+		}
+		if(!DISABLE_HEADER_FOOTER&&(!defined('DISABLE_FOOTER')||!DISABLE_FOOTER)){
 			$file=__DIR__.'/mdfooter.html';
-			if(file_exists($file)) include $file;
-			$file=__DIR__.'/mdfooter.php';
-			if(file_exists($file)) require $file;
+			if(file_exists($file)){
+				include $file;
+			}else{
+				$file=__DIR__.'/mdfooter.php';
+				if(file_exists($file)) require $file;
+			}
 		}
 	}
 }
