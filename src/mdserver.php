@@ -394,14 +394,12 @@ if(!CACHE_ENABLED||(is_null(TARGET_FILE)&&!IN_CACHE)||filemtime(SOURCE_FILE)>cac
 if(is_string($finalHtml)){
 	if(CACHE_ENABLED&&MAX_CACHE_TIME){
 		// Send client cache headers
-		header('Pragma: public',true);
 		header('Last-Modified: '.gmdate('D, d M Y H:i:s T',CACHE_TIME),true);
-		header('Expires: '.gmdate('D, d M Y H:i:s T',CACHE_TIME+MAX_CACHE_TIME),true);
 		header('Cache-Control: max-age='.(time()-CACHE_TIME+MAX_CACHE_TIME).',private',true);
 	}
 	if($finalHtml!=''){
 		// Send the HTML
-		header('Content-Type: text/html;charset=utf8',true);
+		header('Content-Type: text/html;charset=utf-8',true);
 		if(!DISABLE_HEADER_FOOTER){
 			$file=__DIR__.'/mdheader.php';
 			if(file_exists($file)){
