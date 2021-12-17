@@ -20,3 +20,6 @@ define('DISABLE_HEADER_FOOTER',false);// Disable custom header/footer?
 
 // Help for the MarkDown command can be found here: https://manpages.debian.org/bullseye/discount/markdown.1.en.html
 // Help for the redcarpet command can be found here: https://github.com/vmg/redcarpet
+
+// Contributed APCu cache tools
+define('APCU_SECRET','');// Leave empty to disable authentication

@@ -118,6 +118,7 @@ In the `mdserver.conf.php` file please edit the configuration first:
 - `MD_TO_HTML_CMD`: CLI command to use to convert a MarkDown file to HTML (variables `{mdfile}` points to the full local MarkDown file path, `{htmlfile}` to the full local HTML file path, both values are shell argument escaped)
 - `DISABLE_HEADER_FOOTER`: Disable header/footer customization?
 - `DISABLE_HOOK`: Disable the PHP hook?
+- `APCU_SECRET`: A secret string used as password to authenticate the peer when calling the contributed APCu cache tools (optional)
 
 Now you're done already:
 
@@ -171,7 +172,7 @@ When you want to clear the APCu cache, you have two options, which are available
 
 Place the desired PHP script in the same folder as the `mdserver.php` file and call it from your browser.
 
-**NOTE**: Be sure to delete the file from your webspace after usage!
+**NOTE**: Be sure to delete the file from your webspace after usage, or turn on authentication (see `mdserver.conf.php`)!
 
 Clearing the APCu cache from the CLI is a bit difficult, because the APCu cache used in Apache  is different from the one that a CLI PHP uses. If you're looking for a CLI solution for clearing the APCu cache, maybe the [CacheTool](https://github.com/gordalina/cachetool) could help.
 
