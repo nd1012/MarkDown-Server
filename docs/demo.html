@@ -137,6 +137,8 @@ pre>code{
 <li>Any CLI or PHP MarkDown to HTML converter</li>
 </ol>
 
+<p><strong>NOTE</strong>: The MarkDown Server might also run with any other webserver (NGINX f.e.) that can be configured as required.</p>
+
 <h3 id="markdown-converter-debian-linux-setup">MarkDown converter Debian Linux setup</h3>
 
 <h4 id="using-markdown-as-converter">Using <code>markdown</code> as converter</h4>
@@ -208,6 +210,7 @@ RewriteRule ^(.*)$ /path/to/mdwebroot/mdserver.php/$1/ [NC,L]
 <li><code>MD_TO_HTML_CMD</code>: CLI command to use to convert a MarkDown file to HTML (variables <code>{mdfile}</code> points to the full local MarkDown file path, <code>{htmlfile}</code> to the full local HTML file path, both values are shell argument escaped)</li>
 <li><code>DISABLE_HEADER_FOOTER</code>: Disable header/footer customization?</li>
 <li><code>DISABLE_HOOK</code>: Disable the PHP hook?</li>
+<li><code>APCU_SECRET</code>: A secret string used as password to authenticate the peer when calling the contributed APCu cache tools (optional)</li>
 </ul>
 
 <p>Now you&#39;re done already:</p>
@@ -218,6 +221,20 @@ RewriteRule ^(.*)$ /path/to/mdwebroot/mdserver.php/$1/ [NC,L]
 <p>If you&#39;ve used the demo files, you should be able to see the generated HTML website in your browser, when you point to this URI (of course replace the dummys with your configured webspace URI).</p>
 
 <p>To see how the served <code>index.md</code> from the <code>demo</code> folder should look: <a href="https://nd1012.github.io/MarkDown-Server/demo.html">https://nd1012.github.io/MarkDown-Server/demo.html</a>.</p>
+
+<h3 id="setup-webspace-for-any-other-webserver">Setup webspace for any other webserver</h3>
+
+<p>In order to run MarkDown Server the webserver requires to be configured to:</p>
+
+<ol>
+<li>Use <code>index.md</code> as directory index</li>
+<li>Deny direct access to PHP and HTML files (as configured in <code>.htaccess</code>)</li>
+<li>Rewrite browser access to <code>*.md</code> files internal (without a browser redirect) to set the request file path in the <code>PATH_INFO</code> environment variable and execute the <code>mdserver.php</code></li>
+</ol>
+
+<p>If the <code>.htaccess</code> isn&#39;t required (or supported) from the webserver you use, you can delete that file. But be sure to configure the contained rewriting rules somewhere else.</p>
+
+<p>At last NGINX should match these requirements. If I find the time, I&#39;ll do some research how NGINX should be configured. I&#39;d be happy for any advice...</p>
 
 <h2 id="how-it-works">How it works</h2>
 
@@ -266,7 +283,7 @@ If APCu is available and enabled, nothing will be cached in the HTML cache folde
 
 <p>Place the desired PHP script in the same folder as the <code>mdserver.php</code> file and call it from your browser.</p>
 
-<p><strong>NOTE</strong>: Be sure to delete the file from your webspace after usage!</p>
+<p><strong>NOTE</strong>: Be sure to delete the file from your webspace after usage, or turn on authentication (see <code>mdserver.conf.php</code>)!</p>
 
 <p>Clearing the APCu cache from the CLI is a bit difficult, because the APCu cache used in Apache  is different from the one that a CLI PHP uses. If you&#39;re looking for a CLI solution for clearing the APCu cache, maybe the <a href="https://github.com/gordalina/cachetool">CacheTool</a> could help.</p>
 

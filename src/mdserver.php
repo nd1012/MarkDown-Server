@@ -2,7 +2,7 @@
 
 /**
  * @author Andreas Zimmermann, wan24.de
- * @version 4
+ * @version 5
  * @license MIT
  * @github https://github.com/nd1012/MarkDown-Server
  */

@@ -43,6 +43,8 @@ My approach is to use Apache with `mod_rewrite` as webserver, and simple PHP as 
 2. PHP
 3. Any CLI or PHP MarkDown to HTML converter
 
+**NOTE**: The MarkDown Server might also run with any other webserver (NGINX f.e.) that can be configured as required.
+
 ### MarkDown converter Debian Linux setup
 
 #### Using `markdown` as converter
@@ -129,6 +131,18 @@ https://uri.to/mdwebroot/index.md
 If you've used the demo files, you should be able to see the generated HTML website in your browser, when you point to this URI (of course replace the dummys with your configured webspace URI).
 
 To see how the served `index.md` from the `demo` folder should look: [https://nd1012.github.io/MarkDown-Server/demo.html](https://nd1012.github.io/MarkDown-Server/demo.html).
+
+### Setup webspace for any other webserver
+
+In order to run MarkDown Server the webserver requires to be configured to:
+
+1. Use `index.md` as directory index
+2. Deny direct access to PHP and HTML files (as configured in `.htaccess`)
+3. Rewrite browser access to `*.md` files internal (without a browser redirect) to set the request file path in the `PATH_INFO` environment variable and execute the `mdserver.php`
+
+If the `.htaccess` isn't required (or supported) from the webserver you use, you can delete that file. But be sure to configure the contained rewriting rules somewhere else.
+
+At last NGINX should match these requirements. If I find the time, I'll do some research how NGINX should be configured. I'd be happy for any advice...
 
 ## How it works
 
